@@ -20,25 +20,34 @@
 
 import pandas as pd
 import os.path
+import numpy as np
 import pyodbc
 import sqlalchemy
 import logging
+import sys
 
-# migrate me to a config file.
+logging.basicConfig(level=logging.DEBUG,
+                    format="%(asctime)s [%(levelname)s] %(message)s",
+                    handlers=[  
+                        logging.FileHandler("./logs/etl.log"),
+                        logging.StreamHandler(sys.stdout)
+                    ]
+)
+
+# config namespace -- migrate me to a config soon please
 root_dir = "../../baseballdatabank/"
-
 server = "(localdb)\MSSQLLocalDB"
 database = "baseball"
 
+# begin the bulk ETL process
 engine = sqlalchemy.create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server")
 
-# begin the bulk ETL process
 subdirs = ["core","contrib"]
 
 with engine.connect() as conn:
 
     for subdir in subdirs:
-        print(subdir)
+        logging.debug("Starting processing of subdirectory -- " + subdir)
     
         for i in os.listdir(root_dir + subdir):
 
@@ -47,14 +56,14 @@ with engine.connect() as conn:
                 file_name = root_dir + subdir + "/" + i
                 table_name = subdir + "_" + i.replace(".csv","")
 
+                logging.debug("Processing file " + i + "...")
+
                 df = pd.read_csv(file_name)
                 
                 # didn't realize that inf was an actual valid state for a pandas float
                 # infinite ERAs are unfortunate.
                 df.replace({np.inf: np.nan, -np.inf: np.nan}, inplace=True)  
                 
-                # should probably add data validation checks at this step prior to import into sql
-
                 df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
 
-                print(i + " successfully uploaded.")
+                logging.debug(i + " successfully uploaded.")

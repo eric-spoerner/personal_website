@@ -12,7 +12,6 @@
 # * call SSMS job to do post-import updates
 # 
 # ### TODO:
-# * Integrate native python logging framework
 # * EDA.  in SQL?
 # * Define schema and key relationships for entire Chadwick db upon import
 # * Validation testing on imports -- basic metadata catalog to check on number of rows and full set of tables etc
@@ -21,7 +20,7 @@
 import pandas as pd
 import os.path
 import numpy as np
-import pyodbc
+# import pyodbc
 import sqlalchemy
 import logging
 import sys

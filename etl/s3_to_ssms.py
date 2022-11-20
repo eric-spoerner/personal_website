@@ -17,13 +17,18 @@
 # * Validation testing on imports -- basic metadata catalog to check on number of rows and full set of tables etc
 # * Normalization in SQL post-processing
 
+import logging
+import sys
+
 import pandas as pd
 import os.path
 import numpy as np
-# import pyodbc
-import sqlalchemy
-import logging
-import sys
+
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy import text
+
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -34,25 +39,35 @@ logging.basicConfig(level=logging.DEBUG,
 )
 
 # config namespace -- migrate me to a config soon please
-root_dir = "../../baseballdatabank/"
+data_dir = "../../baseballdatabank/"
+schema_dir = "../schema/"
 server = "(localdb)\MSSQLLocalDB"
 database = "baseball"
 
-# begin the bulk ETL process
-engine = sqlalchemy.create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server")
+engine = create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server"
+                                    ##,echo=True
+                                    )
 
+Session = sessionmaker(engine)
+
+# begin the bulk ETL process
 subdirs = ["core","contrib"]
 
 with engine.connect() as conn:
 
+    # with Session.begin() as session:
+    #     with open(schema_dir + "Create stg Schema.sql") as file:
+    #         query = text(file.read())
+    #         conn.execute(query)
+
     for subdir in subdirs:
         logging.debug("Starting processing of subdirectory -- " + subdir)
     
-        for i in os.listdir(root_dir + subdir):
+        for i in os.listdir(data_dir + subdir):
 
             if i.endswith(".csv"):
 
-                file_name = root_dir + subdir + "/" + i
+                file_name = data_dir + subdir + "/" + i
                 table_name = subdir + "_" + i.replace(".csv","")
 
                 logging.debug("Processing file " + i + "...")
@@ -63,6 +78,11 @@ with engine.connect() as conn:
                 # infinite ERAs are unfortunate.
                 df.replace({np.inf: np.nan, -np.inf: np.nan}, inplace=True)  
                 
-                df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
+                with Session.begin() as session:
+                    df.to_sql(name=table_name
+                                # ,schema='stg'
+                                ,con=engine
+                                ,if_exists='replace'
+                                ,index=False)
 
                 logging.debug(i + " successfully uploaded.")

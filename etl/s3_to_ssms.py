@@ -13,6 +13,7 @@
 # 
 # ### TODO:
 # * EDA.  in SQL?
+# * build basic pipeline for player data
 # * Define schema and key relationships for entire Chadwick db upon import
 # * Validation testing on imports -- basic metadata catalog to check on number of rows and full set of tables etc
 # * Normalization in SQL post-processing
@@ -43,6 +44,7 @@ data_dir = "../../baseballdatabank/"
 schema_dir = "../schema/"
 server = "(localdb)\MSSQLLocalDB"
 database = "baseball"
+iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
 
 engine = create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server"
                                     ##,echo=True
@@ -50,7 +52,21 @@ engine = create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_c
 
 Session = sessionmaker(engine)
 
-# begin the bulk ETL process
+# import metadata and other misc data
+
+# ISO codes (pulled from https://www.kaggle.com/datasets/juanumusic/countries-iso-codes)
+with engine.connect() as conn:
+    logging.info('Importing ISO Code Country Data...')
+    df = pd.read_csv(iso_country_file_name)
+    df.to_sql(name='misc_CountryCode'
+                # ,schema='stg'
+                ,con=engine
+                ,if_exists='replace'
+                ,index=False)
+
+    logging.info("Complete.")
+
+# begin the bulk ETL process of chadwick data
 subdirs = ["core","contrib"]
 
 with engine.connect() as conn:
@@ -61,7 +77,7 @@ with engine.connect() as conn:
     #         conn.execute(query)
 
     for subdir in subdirs:
-        logging.debug("Starting processing of subdirectory -- " + subdir)
+        logging.info("Starting processing of subdirectory -- " + subdir)
     
         for i in os.listdir(data_dir + subdir):
 
@@ -70,7 +86,7 @@ with engine.connect() as conn:
                 file_name = data_dir + subdir + "/" + i
                 table_name = subdir + "_" + i.replace(".csv","")
 
-                logging.debug("Processing file " + i + "...")
+                logging.info("Processing file " + i + "...")
 
                 df = pd.read_csv(file_name)
                 
@@ -78,11 +94,11 @@ with engine.connect() as conn:
                 # infinite ERAs are unfortunate.
                 df.replace({np.inf: np.nan, -np.inf: np.nan}, inplace=True)  
                 
-                with Session.begin() as session:
-                    df.to_sql(name=table_name
-                                # ,schema='stg'
-                                ,con=engine
-                                ,if_exists='replace'
-                                ,index=False)
+                # with Session.begin() as session:
+                df.to_sql(name=table_name
+                            # ,schema='stg'
+                            ,con=engine
+                            ,if_exists='replace'
+                            ,index=False)
 
                 logging.debug(i + " successfully uploaded.")

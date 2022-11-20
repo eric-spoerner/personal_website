@@ -90,7 +90,7 @@ join sys.tables as t on c.object_id = t.object_id
 left join sys.types as dtype on c.user_type_id = dtype.user_type_id
 where c.name like '%country%' -- parks, people, schools
 
---how many ID columns are there?
+--exploration of country codes
 IF OBJECT_ID('tempdb..#country') IS NOT NULL 
 BEGIN 
     DROP TABLE #country
@@ -138,3 +138,33 @@ from #state
 group by country_raw, state_raw 
 order by country_raw, state_raw  --yikes.  LOTS of subnational units/states from other countries, etc.  
 --will definitely need to normalize countries first before unwinding this.
+
+select *
+from misc_countrycode
+
+
+--check count
+IF OBJECT_ID('tempdb..#countrymap') IS NOT NULL 
+BEGIN 
+    DROP TABLE #countrymap
+END
+
+
+;with country_agg as (
+    SELECT country from core_Parks
+    UNION ALL
+    SELECT birthCountry from core_People
+    UNION ALL
+    SELECT deathCountry from core_People
+    UNION ALL
+    select country from contrib_schools
+)
+select country as country_raw
+       ,count(*) as cnt
+into    #countrymap
+from    country_agg
+group by country
+order by country
+
+select max(len([English short name lower case])) from misc_countrycode
+select max([numeric code]) from misc_countrycode

@@ -1,13 +1,13 @@
-IF EXISTS (SELECT * FROM sys.tables WHERE [name] = 'people')
-DROP TABLE dbo.people
+IF EXISTS (SELECT * FROM sys.tables WHERE [name] = 'Country')
+DROP TABLE dbo.Country
 GO
 
-CREATE TABLE [dbo].[People](
+CREATE TABLE [dbo].[Country](
     ID INT identity (1,1) PRIMARY KEY -- creating new int-based PK
-	,ChadwickID [varchar](10) NULL -- convert me to an int!  personID
-	,[BirthYear] [smallint] NULL
-	,[BirthMonth] [tinyint] NULL
-	,[BirthDay] [tinyint] NULL
+	,FullName [varchar](50) NULL -- convert me to an int!  personID
+	,[ISO_Two] [varchar](2) NULL
+	,[ISO_Three] [varchar](3) NULL
+	,[ISO_Numeric] [int] NULL
     -- --geographies may need to be normalized?  start with country and state
 	-- [birthCountry] [varchar](max) NULL, 
 	-- [birthState] [varchar](max) NULL,

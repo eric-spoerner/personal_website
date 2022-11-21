@@ -244,3 +244,122 @@ order by cast(finalgame as date) desc
 
 
 select max(len(retroid)), max(len(bbrefid)) from core_people -- 8, 9.  length of 10 for these cols should be fine.
+
+
+--everything's done with peopel table except states, and countries are normalized.  here we go
+--pilfered from https://gist.github.com/mindplay-dk/4755200
+drop table #state
+
+;with [state] as (
+    SELECT [state], country from core_Parks
+    UNION ALL
+    SELECT birthstate, birthcountry from core_People
+    UNION ALL
+    SELECT deathstate, deathcountry from core_People
+    UNION ALL
+    select [state], country from contrib_schools
+)
+select [state] as state_raw, country as country_raw into #state from [state]
+
+drop table #statemap
+
+select state_raw, s.country_raw, countryid, FullName as countryname, ISO_Two as country_ISO_Two, ISO_three as country_ISO_Three, ISO_Numeric as country_ISO_Numeric, count(*) as cnt
+into #statemap
+from #state s
+join #countrymap map on s.country_raw = map.country_raw
+join dbo.country c on c.id = map.CountryID
+where state_raw is not null
+group by state_raw, s.country_raw, countryid, FullName, ISO_Two, ISO_three, ISO_Numeric
+
+select * from #statemap order by cnt desc
+
+--focus on major countries with significant player counts and/or well-known federal systems:
+--usa, canada are clean!
+--priorities to fix: australia, japan, mexico, dominican
+select  substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE])) 
+        ,*
+from #statemap map
+left join dbo.misc_states s 
+on  (s.[ISO 3166-2 SUBDIVISION/STATE NAME] = map.state_raw
+    or map.state_raw = substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE])) )
+    AND map.country_ISO_Two = [COUNTRY ISO CHAR 2 CODE]
+    where [ISO 3166-2 SUBDIVISION/STATE NAME] is null
+ORDER BY countryname
+
+select * from sys.columns where name like '%Sub-division%'
+
+select [COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],
+ substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE])) from dbo.misc_states
+
+--for ETL import
+select *
+from dbo.misc_states
+
+select ',[' + c.name + ']'
+from sys.columns c join sys.tables t on c.object_id = t.object_id where t.name = 'misc_states'
+
+select  [COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE] -- code varchar(10)
+        ,[ISO 3166-2 SUBDIVISION/STATE NAME] -- FullName varchar(100)
+        --add an abbrevname that strips out the country code in ISO for USA at a minimum 
+        --,[ISO 3166-2 PRIMARY LEVEL NAME] --ignore
+        --,[SUBDIVISION/STATE ALTERNATE NAMES] -- doesn't look necessary in this case? check in on states we're trying to import
+        --,[ISO 3166-2 SUBDIVISION/STATE CODE (WITH *)] --ignore, not sure what this gains us
+        --,[SUBDIVISION CDH ID] -- ignore
+        --,[COUNTRY CDH ID] -- ignore
+        ,c.ID AS CountryID -- NOT NULL
+        -- ,[COUNTRY ISO CHAR 2 CODE] -- use me to map to countryIDs
+        -- ,[COUNTRY ISO CHAR 3 CODE]
+from dbo.misc_states s
+join dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.[ISO_Two]
+
+--max 6, let's call it 10 just in case
+select len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]), count(*)
+FROM dbo.misc_states
+group by len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE])
+
+select len([ISO 3166-2 SUBDIVISION/STATE NAME] ), count(*)
+FROM dbo.misc_states
+group by len([ISO 3166-2 SUBDIVISION/STATE NAME])
+order by len([ISO 3166-2 SUBDIVISION/STATE NAME]) desc
+
+--most max length region names are "see other reference to same area"
+select *
+FROM dbo.misc_states
+--group by len([ISO 3166-2 SUBDIVISION/STATE NAME])
+order by len([ISO 3166-2 SUBDIVISION/STATE NAME]) desc
+
+select distinct [ISO 3166-2 PRIMARY LEVEL NAME] from dbo.misc_states -- this data is messy and could afford to be normalized if we need it (don't think we do)
+
+--data on level name is not helpful and would need substantial cleanup.  let's ignore.
+select c.FullName, [COUNTRY ISO CHAR 2 CODE], [ISO 3166-2 PRIMARY LEVEL NAME], count(*) 
+FROM dbo.misc_states s
+JOIN dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.ISO_Two
+GROUP BY c.FullName, [COUNTRY ISO CHAR 2 CODE], [ISO 3166-2 PRIMARY LEVEL NAME]
+ORDER BY count(*) DESC
+
+--referential IDs, don't seem to correspond to ISO.  Ignore.
+select distinct [SUBDIVISION CDH ID],[COUNTRY CDH ID],[COUNTRY ISO CHAR 2 CODE]  from dbo.misc_states
+select * from country
+
+select  [COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE] AS Code-- code varchar(10)
+        ,[ISO 3166-2 SUBDIVISION/STATE NAME] AS FullName-- FullName varchar(100)
+        --add an abbrevname that strips out the country code in ISO for USA at a minimum 
+        ,CASE WHEN c.ISO_Two IN ('AU','US','CA') THEN 
+         substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]))
+         END
+         AS AbbrevName
+        --,[ISO 3166-2 PRIMARY LEVEL NAME] --ignore
+        --,[SUBDIVISION/STATE ALTERNATE NAMES] -- doesn't look necessary in this case? check in on states we're trying to import
+        --,[ISO 3166-2 SUBDIVISION/STATE CODE (WITH *)] --ignore, not sure what this gains us
+        --,[SUBDIVISION CDH ID] -- ignore
+        --,[COUNTRY CDH ID] -- ignore
+        ,c.ID AS CountryID -- NOT NULL
+        -- ,[COUNTRY ISO CHAR 2 CODE] -- use me to map to countryIDs
+        -- ,[COUNTRY ISO CHAR 3 CODE]
+from dbo.misc_states s
+join dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.[ISO_Two]
+
+
+select * from dbo.country WHERE ISO_Two IN ('AU','US','CA')
+
+--at this point let's finish the state table import and 

@@ -72,6 +72,29 @@ INNER JOIN  dbo.country list ON list.FullName = map.country_clean
 --ONLY null country ID should be "at sea"
 --SELECT * FROM #countrymap where CountryID is null
 
+--Importing ISO State Data.
+DELETE FROM dbo.StateProvince
+
+DBCC CHECKIDENT ('StateProvince', RESEED, 0)
+
+INSERT INTO [dbo].[StateProvince] (
+    Code
+    ,FullName
+    ,AbbrevName
+    ,CountryID
+)
+SELECT      [COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]
+            ,[ISO 3166-2 SUBDIVISION/STATE NAME]
+            ,CASE WHEN c.ISO_Two IN ('AU','US','CA') -- Will expand this as needed for other countries with good state data
+                THEN substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]))
+            END
+            ,c.ID
+FROM        dbo.misc_states s
+INNER JOIN  dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.[ISO_Two]
+WHERE      [ISO 3166-2 SUBDIVISION/STATE NAME] IS NOT NULL
+
+SELECT * FROM dbo.StateProvince
+
 /* START WITH PEOPLE DATA */
 DELETE FROM dbo.people -- will need to be more clever about this going forward due to referential integrity considerations.
 

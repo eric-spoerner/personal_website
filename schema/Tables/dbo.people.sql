@@ -22,7 +22,6 @@ CREATE TABLE [dbo].[People](
     ,[DeathCountryID] [int] NULL
 	-- [deathState] [varchar](max) NULL,
 	-- [deathCity] [varchar](max) NULL,
-	-- [nameGiven] [varchar](max) NULL,
 	-- [weight] [float] NULL,
 	-- [height] [float] NULL,
     -- --bats/throws can be shrunk for sure

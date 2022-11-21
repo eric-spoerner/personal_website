@@ -222,3 +222,16 @@ select namefirst, namelast, namegiven from core_people order by len(namegiven) d
 
 select * from core_people where namegiven is not null
 select * from core_people where namefirst = 'Rube'
+
+--batting/throwing
+select distinct bats, throws from core_people
+
+--debut and final game
+select CAST(debut as date), cast(finalgame as date) from core_people
+
+select max(weight), max(height), min(weight), min(height) from core_people
+
+select * from core_people where weight is not null order by weight asc -- eddie gaedel.  of course.
+
+select namefirst, count(*) from core_people group by namefirst order by count(*) desc
+select * from core_people where namefirst is null -- a few box score records i guess

@@ -77,20 +77,38 @@ DELETE FROM dbo.people -- will need to be more clever about this going forward d
 
 DBCC CHECKIDENT ('people', RESEED, 0)
 
--- INSERT INTO     dbo.people (
---                 ChadwickID
---                 ,BirthYear
---                 ,BirthMonth
---                 ,BirthDay
-
--- )
+INSERT INTO     dbo.people (
+                ChadwickID
+                ,NameFirst
+                ,NameLast
+                ,NameGiven
+                ,BirthYear
+                ,BirthMonth
+                ,BirthDay
+                ,BirthCountryID
+                ,DeathYear
+                ,DeathMonth
+                ,DeathDay
+                ,DeathCountryID
+                ,Bats
+                ,Throws
+)
 SELECT          peeps.playerid
+                ,peeps.NameFirst
+                ,peeps.NameLast
+                ,peeps.NameGiven
                 ,peeps.BirthYear
                 ,peeps.BirthMonth
                 ,peeps.BirthDay
-                ,peeps.BirthCountry
-                ,countrymap.CountryID
+                ,countrymap_birth.CountryID
+                ,peeps.DeathYear
+                ,peeps.DeathMonth
+                ,peeps.DeathDay
+                ,countrymap_death.CountryID
+                ,peeps.Bats
+                ,peeps.Throws
 FROM            dbo.core_people peeps
-LEFT JOIN       #countrymap countrymap ON countrymap.country_raw = peeps.BirthCountry
+LEFT JOIN       #countrymap countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
+LEFT JOIN       #countrymap countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry
 
---select * from dbo.people
+select * from dbo.people

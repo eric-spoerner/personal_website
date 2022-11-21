@@ -363,3 +363,51 @@ join dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.[ISO_Two]
 select * from dbo.country WHERE ISO_Two IN ('AU','US','CA')
 
 --at this point let's finish the state table import and 
+
+select * from dbo.misc_states where [ISO 3166-2 SUBDIVISION/STATE NAME] is null -- meh, don't need any of these
+
+--moving on to the state cleanup for dr, mx, jp
+SELECT *
+FROM dbo.StateProvince s
+JOIN dbo.Country c ON c.ID = s.CountryID
+WHERE c.FullName IN ('Dominican Republic', 'Mexico', 'Japan', 'Australia')
+
+--let's doublecheck our assumptions that these are the important countries to manage
+;with [state] as (
+    SELECT [state], country from core_Parks
+    UNION ALL
+    SELECT birthstate, birthcountry from core_People
+    UNION ALL
+    SELECT deathstate, deathcountry from core_People
+    UNION ALL
+    select [state], country from contrib_schools
+)
+select country_clean, count(*) from [state]
+join #countrymap map on map.country_raw = [state].[country]
+where [state] is not null
+group by country_clean
+order by count(*) desc
+--Also Venezuela, Cuba, Panama.
+
+select birthstate from core_people where birthcountry = 'P.R.'
+
+
+
+;WITH state_agg AS (
+    SELECT [state], country from core_Parks
+    UNION ALL
+    SELECT birthstate, birthcountry from core_People
+    UNION ALL
+    SELECT deathstate, deathcountry from core_People
+    UNION ALL
+    select [state], country from contrib_schools
+)
+SELECT state_agg
+        ,country AS country_raw
+       ,cast(NULL AS VARCHAR(50)) AS country_clean
+       ,cast(NULL AS INT) AS CountryID
+INTO    #countrymap
+FROM    country_agg
+WHERE   country IS NOT NULL
+GROUP BY country
+ORDER BY country

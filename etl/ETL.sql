@@ -109,10 +109,12 @@ INSERT INTO     dbo.people (
                 ,BirthMonth
                 ,BirthDay
                 ,BirthCountryID
+                ,BirthStateID
                 ,DeathYear
                 ,DeathMonth
                 ,DeathDay
                 ,DeathCountryID
+                ,DeathStateID
                 ,Bats
                 ,Throws
                 ,Height
@@ -130,10 +132,12 @@ SELECT          peeps.playerid
                 ,peeps.BirthMonth
                 ,peeps.BirthDay
                 ,countrymap_birth.CountryID
+                ,state_birth.ID
                 ,peeps.DeathYear
                 ,peeps.DeathMonth
                 ,peeps.DeathDay
                 ,countrymap_death.CountryID
+                ,state_death.ID
                 ,peeps.Bats
                 ,peeps.Throws
                 ,peeps.Height
@@ -145,4 +149,8 @@ SELECT          peeps.playerid
 FROM            dbo.core_people peeps
 LEFT JOIN       #countrymap countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
 LEFT JOIN       #countrymap countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry
+LEFT JOIN       dbo.StateProvince state_birth ON countrymap_birth.CountryID = state_birth.CountryID AND peeps.birthState = state_birth.AbbrevName
+LEFT JOIN       dbo.StateProvince state_death ON countrymap_death.CountryID = state_death.CountryID AND peeps.deathState = state_death.AbbrevName
 
+-- select * from dbo.people where birthstateID is not null or deathstateID is not null
+-- select * from dbo.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.

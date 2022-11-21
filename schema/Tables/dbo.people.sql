@@ -13,12 +13,14 @@ CREATE TABLE [dbo].[People](
 	,[BirthDay] [tinyint] NULL
     -- --geographies may need to be normalized?  start with country and state
 	,BirthCountryID [int] NULL
+	,BirthStateID [int] NULL
 	-- [birthState] [varchar](max) NULL,
 	-- [birthCity] [varchar](max) NULL,
 	,[DeathYear] [float] NULL
 	,[DeathMonth] [float] NULL
 	,[DeathDay] [float] NULL
     ,[DeathCountryID] [int] NULL
+	,[DeathStateID] [int] NULL
 	-- [deathState] [varchar](max) NULL,
 	-- [deathCity] [varchar](max) NULL,
 	,[Weight] [float] NULL

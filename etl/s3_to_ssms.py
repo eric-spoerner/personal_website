@@ -101,4 +101,4 @@ with engine.connect() as conn:
                             ,if_exists='replace'
                             ,index=False)
 
-                logging.debug(i + " successfully uploaded.")
+                logging.info(i + " successfully uploaded.")

@@ -161,10 +161,64 @@ END
 )
 select country as country_raw
        ,count(*) as cnt
+       ,cast(null as varchar(50)) as country_clean
+       ,cast(null as int) as CountryID
 into    #countrymap
 from    country_agg
+where   country is not null
 group by country
 order by country
 
-select max(len([English short name lower case])) from misc_countrycode
-select max([numeric code]) from misc_countrycode
+--Null country IDs in list largely caused by deathcountry of people who are still living
+--SELECT * from core_People where deathCountry is null
+
+--trim periods from "P.R.", etc.
+update #countrymap set country_clean = replace(country_raw,'.','') where CHARINDEX('.', country_raw) > 0
+update #countrymap set country_clean = 'Ukraine' where country_raw = 'Ukriane'
+UPDATE #countrymap SET country_clean = 'DO' WHERE country_raw = 'D.R.' 
+UPDATE #countrymap SET country_clean = 'AN' WHERE country_raw = 'Curacao' --curacao captured under netherlands antilles
+UPDATE #countrymap SET country_clean = 'KOR' WHERE country_raw = 'South Korea' 
+UPDATE #countrymap SET country_clean = 'PRK' WHERE country_raw = 'North Korea' 
+UPDATE #countrymap SET country_clean = 'GB' WHERE country_raw = 'UK' 
+UPDATE #countrymap SET country_clean = 'VN' WHERE country_raw = 'Viet Nam' 
+
+update #countrymap set country_clean = country_raw where country_clean is null
+
+select * 
+from #countrymap map
+inner join dbo.country list on list.ISO_Two = map.country_clean
+
+--does AU equal austtralia?  yes.
+select * from core_parks where country = 'au'
+
+UPDATE      map
+SET         countryID = list.ID
+FROM        #countrymap map
+INNER JOIN  dbo.country list ON list.ISO_Two = map.country_clean
+
+--just canada and USA, ez
+UPDATE      map
+SET         countryID = list.ID
+FROM        #countrymap map
+INNER JOIN  dbo.country list ON list.ISO_Three = map.country_clean
+
+UPDATE      map
+SET         CountryID = list.ID
+FROM        #countrymap map
+INNER JOIN  dbo.country list ON list.FullName = map.country_clean
+
+select * from #countrymap where countryID is null
+
+SELECT * FROM dbo.country where FullName like '%viet%' --curacao listed as netherlans antilles
+
+select * from core_People where birthcountry = 'at sea' or deathcountry = 'at sea' -- let's ignore "at sea"
+select * from core_People where birthcountry = 'at sea' or deathcountry = 'at sea' -- let's ignore "at sea"
+select * from core_people where birthcountry = 'viet nam'
+
+
+--names
+select max(len(namefirst)), max(len(namelast)), max(len(namegiven)) from core_People
+select namefirst, namelast, namegiven from core_people order by len(namegiven) desc -- some interesting ones at the top of this list
+
+select * from core_people where namegiven is not null
+select * from core_people where namefirst = 'Rube'

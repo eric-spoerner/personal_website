@@ -96,6 +96,8 @@ INSERT INTO     dbo.people (
                 ,Weight
                 ,Debut
                 ,FinalGame
+                ,retroid
+                ,bbrefid
 )
 SELECT          peeps.playerid
                 ,peeps.NameFirst
@@ -115,6 +117,8 @@ SELECT          peeps.playerid
                 ,peeps.weight
                 ,CAST(Debut as date)
                 ,CAST(FinalGame as date)
+                ,retroid
+                ,bbrefid
 FROM            dbo.core_people peeps
 LEFT JOIN       #countrymap countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
 LEFT JOIN       #countrymap countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry

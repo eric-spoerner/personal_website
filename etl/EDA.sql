@@ -235,3 +235,12 @@ select * from core_people where weight is not null order by weight asc -- eddie 
 
 select namefirst, count(*) from core_people group by namefirst order by count(*) desc
 select * from core_people where namefirst is null -- a few box score records i guess
+
+
+--finalGame is listed as the lasdt game of the 2022 regular season for active players, even if htey didn't play that game (see Jorge Alfaro)
+select  * 
+from core_people 
+order by cast(finalgame as date) desc
+
+
+select max(len(retroid)), max(len(bbrefid)) from core_people -- 8, 9.  length of 10 for these cols should be fine.

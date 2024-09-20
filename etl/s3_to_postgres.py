@@ -2,18 +2,18 @@
 # coding: utf-8
 
 # ## ETL PROCESS FOR CHADWICK BASEBALL DATA
-# This is an ETL process to import data from the Chadwick Databank into a Microsoft SQL Server database, either locally hosted or on AWS.
+# This is an ETL process to import data from the Chadwick Databank Postgres database, either locally hosted or on AWS.
 # https://github.com/chadwickbureau/baseballdatabank
 # 
 # ## INTENT:
-# * become part of AWS lambda job
+# * Python orchestrator using SQL supplement scripts
 # * import from S3
 # * Deploy schema fresh
 # * call SSMS job to do post-import updates
 # 
 # ### TODO:
 # * Engine vs connection in SQLAlchemy
-# * Integrate native python logging framework
+# * ~Integrate native python logging framework~
 # * EDA.  in SQL?
 # * learn PSQL?
 # * Define schema and key relationships for entire Chadwick db upon import
@@ -26,6 +26,8 @@ import sys
 import pandas as pd
 import os.path
 import numpy as np
+
+import sqlalchemy
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
@@ -47,9 +49,7 @@ database = "baseball"
 iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
 state_province_file_name = "../data/cdh_state_codes.txt"
 
-engine = create_engine("mssql+pyodbc://" + server + "/" + database + "?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server"
-                                    ##,echo=True
-                                    )
+engine = create_engine('postgresql+psycopg2://test:test@localhost:5433/baseball_test')
 
 Session = sessionmaker(engine)
 
@@ -60,7 +60,7 @@ with engine.connect() as conn:
     logging.info('Importing ISO Code Country Data...')
     df = pd.read_csv(iso_country_file_name)
     df.to_sql(name='misc_CountryCode'
-                # ,schema='stg'
+                ,schema='stg'
                 ,con=engine
                 ,if_exists='replace'
                 ,index=False)
@@ -71,7 +71,7 @@ with engine.connect() as conn:
     logging.info('Importing State and Province Data...')
     df = pd.read_csv(state_province_file_name, sep="\t")
     df.to_sql(name='misc_states'
-                # ,schema='stg'
+                ,schema='stg'
                 ,con=engine
                 ,if_exists='replace'
                 ,index=False)
@@ -96,7 +96,7 @@ with engine.connect() as conn:
             if i.endswith(".csv"):
 
                 file_name = data_dir + subdir + "/" + i
-                table_name = subdir + "_" + i.replace(".csv","")
+                table_name = 'chad_' + subdir + "_" + i.replace(".csv","")
 
                 logging.info("Processing file " + i + "...")
 
@@ -114,3 +114,4 @@ with engine.connect() as conn:
                             ,index=False)
 
                 logging.info(i + " successfully uploaded.")
+

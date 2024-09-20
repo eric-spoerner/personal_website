@@ -2,29 +2,54 @@
 --likely annual
 
 --convert this to a proc in the long term.
-DELETE FROM dbo.country
+--why does the table name have to be in quotations?
 
-DBCC CHECKIDENT ('country', RESEED, 0)
+--SELECT * FROM misc_countrycode;
 
-INSERT INTO dbo.country (
-        FullName
+
+--DELETE FROM dbo.country
+
+--DBCC CHECKIDENT ('country', RESEED, 0)
+
+DROP TABLE ref.country;
+
+CREATE TABLE IF NOT EXISTS ref.country
+(
+	ID SERIAL PRIMARY KEY -- SERIAL = auto-increment IDENTITY(1,1) in T-SQL
+	,"Name" VARCHAR(100)
+	,ISO_Two CHAR(2)
+	,ISO_Three CHAR(3)
+	,ISO_Numeric INT
+);
+
+INSERT INTO ref.country (
+        "Name"
         ,ISO_Two
         ,ISO_Three
         ,ISO_Numeric
 )
-SELECT  [English short name lower case]
-        ,[Alpha-2 code]
-        ,[Alpha-3 code]
-        ,[numeric code]
-FROM    misc_countrycode
 
-select * from dbo.country
+SELECT  "English short name lower case"
+        ,"Alpha-2 code"
+        ,"Alpha-3 code"
+        ,"Numeric code"
+FROM    stg."misc_CountryCode";
+
+
+select *
+from ref.country
+
+/*
+
 
 /* CLEAN UP COUNTRY REFERENCES AND NORMALIZE.  CONSIDER RETAINING ME AS A PERMANENT REFERNETIAL MAP */
 IF OBJECT_ID('tempdb..#countrymap') IS NOT NULL 
 BEGIN 
     DROP TABLE #countrymap
 END
+
+
+
 
 ;WITH country_agg AS (
     SELECT country FROM core_Parks
@@ -154,3 +179,5 @@ LEFT JOIN       dbo.StateProvince state_death ON countrymap_death.CountryID = st
 
 -- select * from dbo.people where birthstateID is not null or deathstateID is not null
 -- select * from dbo.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
+
+*/

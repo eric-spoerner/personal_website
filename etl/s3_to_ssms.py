@@ -105,7 +105,7 @@ with engine.connect() as conn:
                 
                 # with Session.begin() as session:
                 df.to_sql(name=table_name
-                            # ,schema='stg'
+                            ,schema='stg'
                             ,con=engine
                             ,if_exists='replace'
                             ,index=False)

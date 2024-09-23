@@ -1,11 +1,13 @@
 --going to start with a basic drop and create and move on from there.  going to assume we are going to flush rather than make upsert amendments due to limited frequency of new publication
 --likely annual
 
---convert this to a proc in the long term.
---why does the table name have to be in quotations?
+--error handling?
+
+--convert this to a proc in the long term.  Make the output a permanent reference table.
+--why does the table name have to be in quotations?  CAPS.  make it all lower case.
+--"snake case"
 
 --SELECT * FROM misc_countrycode;
-
 
 --DELETE FROM dbo.country
 
@@ -37,65 +39,61 @@ FROM    stg."misc_CountryCode";
 
 
 select *
-from ref.country
+from ref.country;
 
-/*
+DROP TABLE country_map;
 
-
+--research me: temporary tables in postgres
 /* CLEAN UP COUNTRY REFERENCES AND NORMALIZE.  CONSIDER RETAINING ME AS A PERMANENT REFERNETIAL MAP */
-IF OBJECT_ID('tempdb..#countrymap') IS NOT NULL 
-BEGIN 
-    DROP TABLE #countrymap
-END
+CREATE TEMPORARY TABLE IF NOT EXISTS country_map
+(
+	country_raw VARCHAR(50)
+	,country_clean VARCHAR(50)
+	,country_id INT
+);
 
-
-
-
-;WITH country_agg AS (
-    SELECT country FROM core_Parks
+WITH country_agg AS (
+    SELECT country FROM stg."chad_core_Parks"
     UNION ALL
-    SELECT birthCountry FROM core_People
+    SELECT "birthCountry" FROM stg."chad_core_People"
     UNION ALL
-    SELECT deathCountry FROM core_People
+    SELECT "deathCountry" FROM stg."chad_core_People"
     UNION ALL
-    select country FROM contrib_schools
+    select country FROM stg."chad_contrib_Schools"
 )
-SELECT country AS country_raw
-       ,cast(NULL AS VARCHAR(50)) AS country_clean
-       ,cast(NULL AS INT) AS CountryID
-INTO    #countrymap
-FROM    country_agg
-WHERE   country IS NOT NULL
-GROUP BY country
-ORDER BY country
+INSERT INTO country_map (country_raw)
+SELECT DISTINCT country FROM country_agg WHERE country IS NOT NULL;
 
-UPDATE #countrymap SET country_clean = replace(country_raw,'.','') WHERE CHARINDEX('.', country_raw) > 0
-UPDATE #countrymap SET country_clean = 'Ukraine' WHERE country_raw = 'Ukriane'
-UPDATE #countrymap SET country_clean = 'DO' WHERE country_raw = 'D.R.' 
-UPDATE #countrymap SET country_clean = 'AN' WHERE country_raw = 'Curacao' --curacao captured under netherlands antilles
-UPDATE #countrymap SET country_clean = 'KOR' WHERE country_raw = 'South Korea' 
-UPDATE #countrymap SET country_clean = 'PRK' WHERE country_raw = 'North Korea' 
-UPDATE #countrymap SET country_clean = 'GB' WHERE country_raw = 'UK' 
-UPDATE #countrymap SET country_clean = 'VN' WHERE country_raw = 'Viet Nam' 
-UPDATE #countrymap SET country_clean = country_raw WHERE country_clean IS NULL
+UPDATE country_map SET country_clean = replace(country_raw,'.','') WHERE STRPOS(country_raw,'.') > 0;
+UPDATE country_map SET country_clean = 'UA' WHERE country_raw = 'Ukriane';
+UPDATE country_map SET country_clean = 'DO' WHERE country_raw = 'D.R.';
+UPDATE country_map SET country_clean = 'AN' WHERE country_raw = 'Curacao'; --curacao captured under netherlands antilles
+UPDATE country_map SET country_clean = 'KOR' WHERE country_raw = 'South Korea'; 
+UPDATE country_map SET country_clean = 'PRK' WHERE country_raw = 'North Korea'; 
+UPDATE country_map SET country_clean = 'GB' WHERE country_raw = 'UK'; 
+UPDATE country_map SET country_clean = 'VN' WHERE country_raw = 'Viet Nam'; 
+UPDATE country_map SET country_clean = country_raw WHERE country_clean IS NULL;
 
-UPDATE      map
-SET         countryID = list.ID
-FROM        #countrymap map
-INNER JOIN  dbo.country list ON list.ISO_Two = map.country_clean
+UPDATE      country_map
+SET         country_ID = list.ID
+FROM        ref.country AS list WHERE list.ISO_Two = country_map.country_clean;
 
-UPDATE      map
-SET         countryID = list.ID
-FROM        #countrymap map
-INNER JOIN  dbo.country list ON list.ISO_Three = map.country_clean
+UPDATE      country_map
+SET         country_ID = list.ID
+FROM        ref.country AS list WHERE list.ISO_Three = country_map.country_clean;
 
-UPDATE      map
-SET         CountryID = list.ID
-FROM        #countrymap map
-INNER JOIN  dbo.country list ON list.FullName = map.country_clean
+UPDATE      country_map
+SET         country_ID = list.ID
+FROM        ref.country AS list WHERE list."Name" = country_map.country_clean;
 
 --ONLY null country ID should be "at sea"
---SELECT * FROM #countrymap where CountryID is null
+SELECT * FROM country_map where country_id is null;
+
+
+--ONLY null country ID should be "at sea"
+--
+/*
+SELECT * FROM #countrymap where CountryID is null
 
 --Importing ISO State Data.
 DELETE FROM dbo.StateProvince

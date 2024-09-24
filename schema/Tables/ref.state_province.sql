@@ -1,11 +1,12 @@
-IF EXISTS (SELECT * FROM sys.tables WHERE [name] = 'StateProvince')
-DROP TABLE dbo.StateProvince
-GO
+DROP TABLE IF EXISTS ref.state_province;
 
-CREATE TABLE [dbo].[StateProvince](
-    ID [int] identity (1,1) PRIMARY KEY
-	,[Code] [varchar](10) NOT NULL
-	,[FullName] [varchar](50) NOT NULL
-	,[AbbrevName] [varchar](2) NULL
-	,[CountryID] [int] NOT NULL -- I will need to be an FK eventually.
-) ON [PRIMARY]
+CREATE TABLE IF NOT EXISTS ref.state_province(
+	ID SERIAL PRIMARY KEY
+	,country_id INT REFERENCES ref.country(ID)
+	,code VARCHAR(50)
+	,full_name VARCHAR(100)
+	,abbrev_name VARCHAR(100)
+	--,ISO_Two CHAR(2)
+	--,ISO_Three CHAR(3)
+	--,ISO_Numeric INT
+);

@@ -1,11 +1,10 @@
-IF EXISTS (SELECT * FROM sys.tables WHERE [name] = 'Country')
-DROP TABLE dbo.Country
-GO
+DROP TABLE IF EXISTS ref.country;
 
-CREATE TABLE [dbo].[Country](
-    ID INT identity (1,1) PRIMARY KEY -- creating new int-based PK
-	,FullName [varchar](50) NULL -- convert me to an int!  personID
-	,[ISO_Two] [varchar](2) NULL
-	,[ISO_Three] [varchar](3) NULL
-	,[ISO_Numeric] [int] NULL
-) ON [PRIMARY]
+CREATE TABLE IF NOT EXISTS ref.country
+(
+	ID SERIAL PRIMARY KEY -- SERIAL = auto-increment IDENTITY(1,1) in T-SQL
+	,"Name" VARCHAR(100)
+	,iso_two CHAR(2)
+	,iso_three CHAR(3)
+	,iso_numeric INT
+);

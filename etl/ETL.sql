@@ -13,22 +13,22 @@
 
 --DBCC CHECKIDENT ('country', RESEED, 0)
 
-DROP TABLE ref.country;
+DROP TABLE IF EXISTS ref.country;
 
 CREATE TABLE IF NOT EXISTS ref.country
 (
 	ID SERIAL PRIMARY KEY -- SERIAL = auto-increment IDENTITY(1,1) in T-SQL
 	,"Name" VARCHAR(100)
-	,ISO_Two CHAR(2)
-	,ISO_Three CHAR(3)
-	,ISO_Numeric INT
+	,iso_two CHAR(2)
+	,iso_three CHAR(3)
+	,iso_numeric INT
 );
 
 INSERT INTO ref.country (
         "Name"
-        ,ISO_Two
-        ,ISO_Three
-        ,ISO_Numeric
+        ,iso_two
+        ,iso_three
+        ,iso_numeric
 )
 
 SELECT  "English short name lower case"
@@ -37,11 +37,7 @@ SELECT  "English short name lower case"
         ,"Numeric code"
 FROM    stg."misc_CountryCode";
 
-
-select *
-from ref.country;
-
-DROP TABLE country_map;
+DROP TABLE IF EXISTS country_map;
 
 --research me: temporary tables in postgres
 /* CLEAN UP COUNTRY REFERENCES AND NORMALIZE.  CONSIDER RETAINING ME AS A PERMANENT REFERNETIAL MAP */
@@ -89,35 +85,47 @@ FROM        ref.country AS list WHERE list."Name" = country_map.country_clean;
 --ONLY null country ID should be "at sea"
 SELECT * FROM country_map where country_id is null;
 
-
---ONLY null country ID should be "at sea"
---
-/*
-SELECT * FROM #countrymap where CountryID is null
-
 --Importing ISO State Data.
-DELETE FROM dbo.StateProvince
+DROP TABLE IF EXISTS ref.state_province;
 
-DBCC CHECKIDENT ('StateProvince', RESEED, 0)
+--DBCC CHECKIDENT ('StateProvince', RESEED, 0)
 
-INSERT INTO [dbo].[StateProvince] (
-    Code
-    ,FullName
-    ,AbbrevName
-    ,CountryID
+SELECT * FROM stg.misc_states;
+select * from stg.misc_states WHERE "COUNTRY ISO CHAR 2 CODE" IN ('US','CA');
+select * from stg.misc_states WHERE "ISO 3166-2 PRIMARY LEVEL NAME" = 'state';
+
+
+CREATE TABLE IF NOT EXISTS ref.state_province(
+	ID SERIAL PRIMARY KEY
+	,country_id INT --Add a FK here!
+	,code VARCHAR(50)
+	,full_name VARCHAR(100)
+	,abbrev_name VARCHAR(100)
+	--,ISO_Two CHAR(2)
+	--,ISO_Three CHAR(3)
+	--,ISO_Numeric INT
+);
+
+
+
+
+INSERT INTO ref.state_province (
+    code
+    ,full_name
+    ,abbrev_name
+    ,country_id
 )
-SELECT      [COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]
-            ,[ISO 3166-2 SUBDIVISION/STATE NAME]
-            ,CASE WHEN c.ISO_Two IN ('AU','US','CA') -- Will expand this as needed for other countries with good state data
-                THEN substring([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE],4,len([COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE]))
+SELECT      "COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE"
+            ,"ISO 3166-2 SUBDIVISION/STATE NAME"
+            ,CASE WHEN c.iso_two IN ('AU','US','CA') -- Will expand this as needed for other countries with good state data
+                THEN substring("COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE",4,LENGTH("COUNTRY NAME  ISO 3166-2 SUB-DIVISION/STATE CODE"))
             END
             ,c.ID
-FROM        dbo.misc_states s
-INNER JOIN  dbo.country c on s.[COUNTRY ISO CHAR 2 CODE] = c.[ISO_Two]
-WHERE      [ISO 3166-2 SUBDIVISION/STATE NAME] IS NOT NULL
+FROM        stg.misc_states AS s
+INNER JOIN  ref.country AS c on s."COUNTRY ISO CHAR 2 CODE" = c.iso_two
+WHERE      "ISO 3166-2 SUBDIVISION/STATE NAME" IS NOT NULL;
 
-SELECT * FROM dbo.StateProvince
-
+/*
 /* START WITH PEOPLE DATA */
 DELETE FROM dbo.people -- will need to be more clever about this going forward due to referential integrity considerations.
 

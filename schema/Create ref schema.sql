@@ -1,0 +1,6 @@
+-- SCHEMA: ref
+
+-- DROP SCHEMA IF EXISTS ref ;
+
+CREATE SCHEMA IF NOT EXISTS ref
+    AUTHORIZATION postgres;

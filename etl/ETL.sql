@@ -13,16 +13,10 @@
 
 --DBCC CHECKIDENT ('country', RESEED, 0)
 
-DROP TABLE IF EXISTS ref.country;
+--DROP TABLE IF EXISTS ref.state_province;
 
-CREATE TABLE IF NOT EXISTS ref.country
-(
-	ID SERIAL PRIMARY KEY -- SERIAL = auto-increment IDENTITY(1,1) in T-SQL
-	,"Name" VARCHAR(100)
-	,iso_two CHAR(2)
-	,iso_three CHAR(3)
-	,iso_numeric INT
-);
+DELETE FROM ref.state_province;
+DELETE FROM ref.country;
 
 INSERT INTO ref.country (
         "Name"
@@ -83,29 +77,11 @@ SET         country_ID = list.ID
 FROM        ref.country AS list WHERE list."Name" = country_map.country_clean;
 
 --ONLY null country ID should be "at sea"
-SELECT * FROM country_map where country_id is null;
+--SELECT * FROM country_map where country_id is null;
 
 --Importing ISO State Data.
-DROP TABLE IF EXISTS ref.state_province;
 
 --DBCC CHECKIDENT ('StateProvince', RESEED, 0)
-
-SELECT * FROM stg.misc_states;
-select * from stg.misc_states WHERE "COUNTRY ISO CHAR 2 CODE" IN ('US','CA');
-select * from stg.misc_states WHERE "ISO 3166-2 PRIMARY LEVEL NAME" = 'state';
-
-
-CREATE TABLE IF NOT EXISTS ref.state_province(
-	ID SERIAL PRIMARY KEY
-	,country_id INT --Add a FK here!
-	,code VARCHAR(50)
-	,full_name VARCHAR(100)
-	,abbrev_name VARCHAR(100)
-	--,ISO_Two CHAR(2)
-	--,ISO_Three CHAR(3)
-	--,ISO_Numeric INT
-);
-
 
 
 
@@ -125,15 +101,15 @@ FROM        stg.misc_states AS s
 INNER JOIN  ref.country AS c on s."COUNTRY ISO CHAR 2 CODE" = c.iso_two
 WHERE      "ISO 3166-2 SUBDIVISION/STATE NAME" IS NOT NULL;
 
-/*
+
 /* START WITH PEOPLE DATA */
-DELETE FROM dbo.people -- will need to be more clever about this going forward due to referential integrity considerations.
+DELETE FROM core.people; -- will need to be more clever about this going forward due to referential integrity considerations.
 
-DBCC CHECKIDENT ('people', RESEED, 0)
+--DBCC CHECKIDENT ('people', RESEED, 0)
 
-INSERT INTO     dbo.people (
-                ChadwickID
-                ,NameFirst
+INSERT INTO     core.people (
+                chadwick_id
+                ,name_first
                 ,NameLast
                 ,NameGiven
                 ,BirthYear
@@ -178,12 +154,11 @@ SELECT          peeps.playerid
                 ,retroid
                 ,bbrefid
 FROM            dbo.core_people peeps
-LEFT JOIN       #countrymap countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
-LEFT JOIN       #countrymap countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry
-LEFT JOIN       dbo.StateProvince state_birth ON countrymap_birth.CountryID = state_birth.CountryID AND peeps.birthState = state_birth.AbbrevName
-LEFT JOIN       dbo.StateProvince state_death ON countrymap_death.CountryID = state_death.CountryID AND peeps.deathState = state_death.AbbrevName
+LEFT JOIN       country_map countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
+LEFT JOIN       country_map countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry
+LEFT JOIN       ref.state_province state_birth ON countrymap_birth.CountryID = state_birth.CountryID AND peeps.birthState = state_birth.AbbrevName
+LEFT JOIN       ref.state_province state_death ON countrymap_death.CountryID = state_death.CountryID AND peeps.deathState = state_death.AbbrevName
 
 -- select * from dbo.people where birthstateID is not null or deathstateID is not null
 -- select * from dbo.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
 
-*/

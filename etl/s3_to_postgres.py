@@ -53,6 +53,9 @@ engine = create_engine('postgresql+psycopg2://test:test@localhost:5433/baseball_
 
 Session = sessionmaker(engine)
 
+# here: create table schema.  Add config to determine full schema rebuild vs table refresh vs general update.
+# start with full rebuild tho.
+
 # import metadata and other misc data
 
 # ISO codes (pulled from https://www.kaggle.com/datasets/juanumusic/countries-iso-codes)

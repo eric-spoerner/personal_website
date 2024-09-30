@@ -110,55 +110,61 @@ DELETE FROM core.people; -- will need to be more clever about this going forward
 INSERT INTO     core.people (
                 chadwick_id
                 ,name_first
-                ,NameLast
-                ,NameGiven
-                ,BirthYear
-                ,BirthMonth
-                ,BirthDay
-                ,BirthCountryID
-                ,BirthStateID
-                ,DeathYear
-                ,DeathMonth
-                ,DeathDay
-                ,DeathCountryID
-                ,DeathStateID
-                ,Bats
-                ,Throws
-                ,Height
-                ,Weight
-                ,Debut
-                ,FinalGame
-                ,retroid
-                ,bbrefid
+                ,name_last
+                ,name_given
+                ,birth_year
+                ,birth_month
+                ,birth_day
+                ,birth_country_id
+                ,birth_state_id
+                ,death_year
+                ,death_month
+                ,death_day
+                ,death_country_id
+                ,death_state_id
+                ,bats
+                ,throws
+                ,height
+                ,weight
+                ,debut
+                ,final_game
+                ,retro_id
+                ,bbref_id
 )
-SELECT          peeps.playerid
-                ,peeps.NameFirst
-                ,peeps.NameLast
-                ,peeps.NameGiven
-                ,peeps.BirthYear
-                ,peeps.BirthMonth
-                ,peeps.BirthDay
-                ,countrymap_birth.CountryID
-                ,state_birth.ID
-                ,peeps.DeathYear
-                ,peeps.DeathMonth
-                ,peeps.DeathDay
-                ,countrymap_death.CountryID
+SELECT          peeps."playerID"
+                ,peeps."nameFirst"
+                ,peeps."nameLast"
+                ,peeps."nameGiven"
+                ,peeps."birthYear"
+                ,peeps."birthMonth"
+                ,peeps."birthDay"
+                ,countrymap_birth.country_id
+                ,state_birth.id
+                ,peeps."deathYear"
+                ,peeps."deathMonth"
+                ,peeps."deathDay"
+                ,countrymap_death.country_id
                 ,state_death.ID
                 ,peeps.Bats
                 ,peeps.Throws
                 ,peeps.Height
                 ,peeps.weight
-                ,CAST(Debut as date)
-                ,CAST(FinalGame as date)
-                ,retroid
-                ,bbrefid
-FROM            dbo.core_people peeps
-LEFT JOIN       country_map countrymap_birth ON countrymap_birth.country_raw = peeps.BirthCountry
-LEFT JOIN       country_map countrymap_death ON countrymap_death.country_raw = peeps.DeathCountry
-LEFT JOIN       ref.state_province state_birth ON countrymap_birth.CountryID = state_birth.CountryID AND peeps.birthState = state_birth.AbbrevName
-LEFT JOIN       ref.state_province state_death ON countrymap_death.CountryID = state_death.CountryID AND peeps.deathState = state_death.AbbrevName
+                ,CAST(peeps."debut" as date)
+                ,CAST(peeps."finalGame" as date)
+                ,peeps."retroID"
+                ,peeps."bbrefID"
+FROM            stg."chad_core_People" peeps
+LEFT JOIN       country_map countrymap_birth ON countrymap_birth.country_raw = peeps."birthCountry"
+LEFT JOIN       country_map countrymap_death ON countrymap_death.country_raw = peeps."deathCountry"
+LEFT JOIN       ref.state_province state_birth ON countrymap_birth.country_id = state_birth.country_id AND peeps."birthState" = state_birth.abbrev_name
+LEFT JOIN       ref.state_province state_death ON countrymap_death.country_id = state_death.country_id AND peeps."deathState" = state_death.abbrev_name
+;
 
--- select * from dbo.people where birthstateID is not null or deathstateID is not null
--- select * from dbo.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
+--select * from stg."chad_core_People";
+
+SELECT * FROM core.people WHERE name_last = 'Gwynn';
+select * from country_map;
+
+-- select * from core.people where birth_state_id is not null or death_state_id is not null
+-- select * from core.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
 

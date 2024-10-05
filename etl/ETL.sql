@@ -17,6 +17,7 @@
 
 DELETE FROM ref.state_province;
 DELETE FROM ref.country;
+DELETE FROM ref.league;
 
 INSERT INTO ref.country (
         "Name"
@@ -167,4 +168,21 @@ select * from country_map;
 
 -- select * from core.people where birth_state_id is not null or death_state_id is not null
 -- select * from core.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
+
+INSERT INTO ref.league (
+	"abbrev_name"
+	,"lahman_id"
+)
+SELECT DISTINCT "lgID", "lgID"
+FROM stg."chad_core_Teams"
+WHERE "lgID" IS NOT NULL;
+
+UPDATE ref.league SET "name" = 'National League', is_active = TRUE WHERE "lahman_id" = 'NL';
+UPDATE ref.league SET "name" = 'American League', is_active = TRUE WHERE "lahman_id" = 'AL';
+UPDATE ref.league SET "name" = 'Players'' League', is_active = FALSE WHERE "lahman_id" = 'PL';
+UPDATE ref.league SET "name" = 'Federal League', is_active = FALSE WHERE "lahman_id" = 'FL';
+UPDATE ref.league SET "name" = 'Union Assocation', is_active = FALSE WHERE "lahman_id" = 'UA';
+UPDATE ref.league SET "name" = 'American Association', is_active = FALSE WHERE "lahman_id" = 'AA';
+
+SELECT * FROM ref.league;
 

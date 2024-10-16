@@ -88,12 +88,35 @@ SELECT "teamID", "franchID", "name", park, count(*) from stg."chad_core_Teams" g
 )
 select * from teams_parks
 
-select * from stg."chad_core_Parks" where "park.alias" like '%;%' or "park.alias" like '%/%'
+DROP TABLE IF EXISTS ballparks_stg;
+
+select *
+into temporary table ballparks_stg
+from stg."chad_core_Parks"; 
+--where "park.alias" like '%;%' or "park.alias" like '%/%';
+
+alter table ballparks_stg add column alias1 VARCHAR(100);
+alter table ballparks_stg add column alias2 VARCHAR(100);
+alter table ballparks_stg add column alias3 VARCHAR(100);
+alter table ballparks_stg add column alias4 VARCHAR(100);
+
+select * from ballparks_stg;
+
+--only slash is for "San Diego/Jack Murphy".  Don't worrry about that one procedurally, ahndle the semicolons
+
+select "park.name"
+		, "park.alias"
+		, strpos("park.alias", ';') 
+		, strpos("park.alias", '/') 
+from ballparks_stg
+where "park.alias" is not null 
+	and strpos("park.alias", ';') + strpos("park.alias", '/') > 0;
+
+
 
 --next: create the stadium table
 
 
-select * from information_schema.columns where table_name = 'chad_core_Parks' ;
 
 --conversion chart:
 /*

@@ -3,6 +3,8 @@
 
 --error handling?
 
+--how aggressive should we be with creating individual schemas?  what is their overall purpose?
+
 --convert this to a proc in the long term.  Make the output a permanent reference table.
 --why does the table name have to be in quotations?  CAPS.  make it all lower case.
 --"snake case"

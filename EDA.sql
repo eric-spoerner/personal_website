@@ -1,4 +1,6 @@
 /*
+CONSIDER GRABBING SEAMHEADS BASEBALL DB INSTEAD.
+
 select * from stg."chad_core_Parks";
 
 --IDs to import before teams:
@@ -158,9 +160,13 @@ into temporary table teams_parks
 from stg."chad_core_Teams" 
 group by "teamID", "franchID", "name", park;
 
-select * from teams_parks;
+--select * from teams_parks;
 
 --most dupes on team parks are a result of multiple franchises playing in the same park, eg philly a's/phils
+--eclipse park
+--exposition park
+--recreation park
+--union grounds?
 ;with dupes as (
 select "park", count(*) as cnt
 from teams_parks
@@ -174,10 +180,96 @@ from dupes
 join teams_parks on teams_parks.park = dupes.park
 order by dupes.park;
 
+
+update ballpark_stg 
+set "park.name" = "park.name" || ' in Cincinnati'
+where "park.key" like 'CIN%' and "park.name" in ('League Park I', 'League Park II');
+
+--select * from ballpark_stg where "park.key" like 'CIN%';
+
+--DON'T TOUCH SOURCE FILE!  migrate to temp table and do it there.  or not?
+--just do this for now, will reassess when updating/refreshing standard etl process.l
+update stg."chad_core_Teams" set park = 'League Park II' where park = 'League Park II/Cleveland Stadium';
+
+--four ballparks called "athletic park", none of them in Indianapolis.
+--select * from ballpark_stg where "park.name" = 'Athletic Park';
+update ballpark_stg set "park.name" = "park.name" || ' (' || "city" || ')' where "park.name" = 'Athletic Park';
+--select * from ballpark_stg where "park.name" like 'Athletic Park%';
+
+--Milwaukee and Kansas City "athletic park" not found here.
+select * from stg."chad_core_Teams" where park like '%Athletic Park%';
+
+--indianapolis: per wikipedia, real name is 'Tinker Park', alias "Athletic Park" or "Seventh Street Park"
+--select * from ballpark_stg where "park.name" like 'Tinker%' or "park.name" like 'Seventh%';
+update stg."chad_core_Teams" 
+set "park" = REPLACE(park, 'Athletic Park', 'Seventh Street Park')
+where park like '%Athletic Park%' and name like 'Indianapolis%';
+
+update stg."chad_core_Teams" 
+set "park" = 'Seventh Street Park I'
+where park = 'Seventh Street Park' and name like 'Indianapolis%';
+--select * from stg."chad_core_Teams" where park like 'Seventh%';
+
+--milwaukee:
+--select * from ballpark_stg where "park.name" like 'Borchert%';
+--select * from ballpark_stg where "city" = 'Milwaukee';
+
+update ballpark_stg set alias1 = 'Borchert Field' where "park.key" = 'MIL03';
+--add borchert field alias to Athletic Park.  Milwaukee played there for one season in 1891.
+select * from ballpark_stg where "city" = 'Milwaukee';
+
+--washington and philly...
+--washington's called athletic park
+--philly's called Forepaugh Park.
+--select * from stg."chad_core_Teams" where park like 'Athletic%';
+update stg."chad_core_Teams" set park = 'Forepaugh Park' where park = 'Athletic Park' and "name" like 'Philadelphia%';
+update ballpark_stg set "alias1" = 'Athletic Park' where "park.name" = 'Forepaugh Park';
+--select * from stg."chad_core_Teams" where name like 'Philadelphia%' order by "yearID" ;
+
+select * from ballpark_stg where city = 'Philadelphia';
+
 --which names are dupes that we should look out for?  check all names and aliases
 --9 total dupes across all names and aliases
---couple are generic, wrigley field likely corresponds to early years of LA angels
+--couple are generic, wrigley field has Federal League teams.
 --consider appending city to name or something
+--athletic park was two separate places -- philly (jeferson street grounds) and wash
+--resolve duplicate names by appending city name in case of cin/cle "League Park" and Athletic park.
+
+---recreation park: detroit/philly/pittsburgh i sall we have left.
+--detroit: home of the detroit wolverines (NL) 1881-1888
+--philadelpha: home of the phillies / quakers 1883-1886
+--pittsburgh: aka union park / 3a park / coliseum (allegheneys = pirates)
+--for pittsburgh, note ballpark switch in mid 1909.  also mid 1970 for move to 3 rivers.  See if this is a common use case?
+--15 records -- olympic + hiram bithorn in late expos years for example.
+select * from stg."chad_core_Teams" cct where position('/' in "park") > 0;
+
+--update ballpark_stg
+
+update ballpark_stg 
+set "park.name" = "park.name" || ' (' || "city" || ')'
+where "park.name" like '%Recreation%'
+and city IN ('Philadelphia','Pittsburgh','Detroit');
+
+select *
+from ballpark_stg 
+where "park.name" like '%Recreation%'
+and city IN ('Philadelphia','Pittsburgh','Detroit')
+order by "park.key";
+
+update stg."chad_core_Teams" 
+set "park" = 'Recreation Park (Pittsburgh)'
+where name like 'Pittsburg%' and park = 'Recreation Park';
+
+update stg."chad_core_Teams" 
+set "park" = 'Recreation Park (Detroit)'
+where name like 'Detroit%' and park = 'Recreation Park';
+
+update stg."chad_core_Teams" 
+set "park" = 'Recreation Park (Philadelphia)'
+where name like 'Philadelphia%' and park = 'Recreation Park';
+
+select * from stg."chad_core_Teams" where "park" like 'Recreation Park%';
+
 with allparknames as (
 	select "park.name" from ballpark_stg
 	union all
@@ -188,17 +280,37 @@ with allparknames as (
 	select "alias3" from ballpark_stg
 	union all
 	select "alias4" from ballpark_stg
+), dupe_parks AS (
+	select "park.name" AS "name", count(*) AS "cnt"
+	from ballpark_stg
+	where "park.name" is not null
+	group by "park.name"
+	having count(*) > 1
 )
-select "park.name", count(*) 
-from ballpark_stg
-where "park.name" is not null
-group by "park.name"
-having count(*) > 1
+SELECT distinct dupe_parks.*, t."name", t."lgID", t."franchID"
+FROM dupe_parks 
+LEFT JOIN stg."chad_core_Teams" AS t ON dupe_parks.name = t."park"
+order by dupe_parks.name
 ;
+
+--select * from ballpark_stg where "park.name" like 'League Park%' or "park.name" like '%Cleveland%';
+
+
+--league park II slash cleveland stadium
+--select * from stg."chad_core_Teams" where "park" like 'League Park%';
+--select * from stg."chad_core_Parks" where "park.name" like 'League Park%' or "park.name" like '%Cleveland%';
+
+--geauga park grounds not found in teams?
+--per wikipedia, was a site of NL cleveland blues/spiders games in 1887.  safe to ignore.
+--select * from stg."chad_core_Teams" where "park" like '%geauga%';
+--select * from stg."chad_core_Parks" where "park.name" like '%Geauga%';
+--select * from stg."chad_core_Teams" where "yearID" = 1887;
 
 
 
 /*
+ * 
+ * 
 select "park.name"
 		, "park.alias"
 		, strpos("park.alias", ';') 

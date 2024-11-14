@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS ref.state_province;
+DROP TABLE IF EXISTS ref.state_province CASCADE;
 
 CREATE TABLE IF NOT EXISTS ref.state_province(
 	ID SERIAL PRIMARY KEY

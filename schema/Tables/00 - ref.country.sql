@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS ref.country;
+DROP TABLE IF EXISTS ref.country CASCADE;
 
 CREATE TABLE IF NOT EXISTS ref.country
 (

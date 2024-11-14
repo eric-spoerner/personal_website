@@ -19,6 +19,7 @@
 # * Define schema and key relationships for entire Chadwick db upon import
 # * Validation testing on imports -- basic metadata catalog to check on number of rows and full set of tables etc
 # * Normalization in SQL post-processing
+# * parameterize me so we're not running the same thing repeatedly.
 
 import logging
 import sys
@@ -44,6 +45,7 @@ logging.basicConfig(level=logging.DEBUG,
 # config namespace -- migrate me to a config soon please
 data_dir = "../../baseballdatabank/"
 schema_dir = "../schema/"
+tables_dir = "../schema/tables/"
 server = "(localdb)\MSSQLLocalDB"
 database = "baseball"
 iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
@@ -118,3 +120,16 @@ with engine.connect() as conn:
 
                 logging.info(i + " successfully uploaded.")
 
+    for i in os.listdir(tables_dir):
+
+        ## cascading deletes and pk issues. how to handle?
+        if i.endswith(".sql"):
+
+            with open(tables_dir + i) as file:
+            
+                logging.info("Executing script " + i + "...")
+
+                query = text(file.read())
+                conn.execute(query)
+
+                logging.info(i + " successfully executed.")

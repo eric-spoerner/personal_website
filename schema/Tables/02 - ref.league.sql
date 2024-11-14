@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS ref.league;
+DROP TABLE IF EXISTS ref.league CASCADE;
 
 CREATE TABLE IF NOT EXISTS ref.league
 (

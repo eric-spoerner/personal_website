@@ -19,7 +19,8 @@
 # * Define schema and key relationships for entire Chadwick db upon import
 # * Validation testing on imports -- basic metadata catalog to check on number of rows and full set of tables etc
 # * Normalization in SQL post-processing
-# * parameterize me so we're not running the same thing repeatedly.
+# 
+# * parameterize me so we're not running the same thing repeatedly.  add command line args.  sys.argv, sys.argparse
 
 import logging
 import sys
@@ -46,7 +47,7 @@ logging.basicConfig(level=logging.DEBUG,
 data_dir = "../../baseballdatabank/"
 schema_dir = "../schema/"
 tables_dir = "../schema/tables/"
-server = "(localdb)\MSSQLLocalDB"
+# server = "(localdb)\MSSQLLocalDB"
 database = "baseball"
 iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
 state_province_file_name = "../data/cdh_state_codes.txt"
@@ -133,3 +134,24 @@ with engine.connect() as conn:
                 conn.execute(query)
 
                 logging.info(i + " successfully executed.")
+
+    ## ETL
+    with open("ETL.sql") as file:
+        trans = conn.begin() ## trying a transaction to fix the problem.
+        logging.info("Executing ETL...")
+        query = text(file.read())
+
+        try:
+            conn.execute(query)
+            logging.info("ETL successfully executed.")
+            trans.commit()
+        except Exception:
+            trans.rollback()
+            raise
+
+        query2 = "select * from ref.country;"
+        result = conn.execute(query2)
+        rows = result.fetchall()
+
+        for row in rows:
+            print(row)

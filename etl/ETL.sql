@@ -1,3 +1,4 @@
+-- Active: 1727365093671@@127.0.0.1@5433@baseball_test
 --going to start with a basic drop and create and move on from there.  going to assume we are going to flush rather than make upsert amendments due to limited frequency of new publication
 --likely annual
 
@@ -21,23 +22,24 @@ DELETE FROM ref.state_province;
 DELETE FROM ref.country;
 DELETE FROM ref.league;
 
-INSERT INTO ref.country (
+INSERT INTO ref.country 
+(
         "Name"
-        ,iso_two
-        ,iso_three
-        ,iso_numeric
-)
-
+        ,"iso_two"
+        ,"iso_three"
+        ,"iso_numeric"
+        )
 SELECT  "English short name lower case"
         ,"Alpha-2 code"
         ,"Alpha-3 code"
         ,"Numeric code"
 FROM    stg."misc_CountryCode";
 
-DROP TABLE IF EXISTS country_map;
+--DROP TABLE IF EXISTS country_map;
 
 --research me: temporary tables in postgres
 /* CLEAN UP COUNTRY REFERENCES AND NORMALIZE.  CONSIDER RETAINING ME AS A PERMANENT REFERNETIAL MAP */
+/*
 CREATE TEMPORARY TABLE IF NOT EXISTS country_map
 (
 	country_raw VARCHAR(50)
@@ -105,7 +107,7 @@ INNER JOIN  ref.country AS c on s."COUNTRY ISO CHAR 2 CODE" = c.iso_two
 WHERE      "ISO 3166-2 SUBDIVISION/STATE NAME" IS NOT NULL;
 
 
-/* START WITH PEOPLE DATA */
+--START WITH PEOPLE DATA 
 DELETE FROM core.people; -- will need to be more clever about this going forward due to referential integrity considerations.
 
 --DBCC CHECKIDENT ('people', RESEED, 0)
@@ -188,3 +190,4 @@ UPDATE ref.league SET "name" = 'American Association', is_active = FALSE WHERE "
 
 SELECT * FROM ref.league;
 
+*/

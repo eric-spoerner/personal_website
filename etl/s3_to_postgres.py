@@ -12,7 +12,7 @@
 # * call SSMS job to do post-import updates
 # 
 # ### TODO:
-# * Engine vs connection in SQLAlchemy
+# * Engine vs connection in SQLAlchemy ---> Use Connection for sql procs etc, make sure to wrap in a transaction.
 # * ~Integrate native python logging framework~
 # * EDA.  in SQL?
 # * learn PSQL?
@@ -29,7 +29,7 @@ import pandas as pd
 import os.path
 import numpy as np
 
-import sqlalchemy
+#import sqlalchemy
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
@@ -48,13 +48,13 @@ data_dir = "../../baseballdatabank/"
 schema_dir = "../schema/"
 tables_dir = "../schema/tables/"
 # server = "(localdb)\MSSQLLocalDB"
-database = "baseball"
+# database = "baseball"
 iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
 state_province_file_name = "../data/cdh_state_codes.txt"
 
 engine = create_engine('postgresql+psycopg2://test:test@localhost:5433/baseball_test')
 
-Session = sessionmaker(engine)
+# Session = sessionmaker(engine)
 
 # here: create table schema.  Add config to determine full schema rebuild vs table refresh vs general update.
 # start with full rebuild tho.
@@ -149,9 +149,9 @@ with engine.connect() as conn:
             trans.rollback()
             raise
 
-        query2 = "select * from ref.country;"
-        result = conn.execute(query2)
-        rows = result.fetchall()
+        ##query2 = "select * from ref.country;"
+        ##result = conn.execute(query2)
+        ##rows = result.fetchall()
 
-        for row in rows:
-            print(row)
+        ## for row in rows:
+           ## print(row)

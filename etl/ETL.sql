@@ -1,26 +1,12 @@
--- Active: 1727365093671@@127.0.0.1@5433@baseball_test
---going to start with a basic drop and create and move on from there.  going to assume we are going to flush rather than make upsert amendments due to limited frequency of new publication
+--going to start with a basic drop and create and move on from there.  
+--going to assume we are going to flush rather than make upsert amendments due to limited frequency of new publication
 --likely annual
 
 --error handling?
 
 --how aggressive should we be with creating individual schemas?  what is their overall purpose?
 
---convert this to a proc in the long term.  Make the output a permanent reference table.
---why does the table name have to be in quotations?  CAPS.  make it all lower case.
---"snake case"
-
---SELECT * FROM misc_countrycode;
-
---DELETE FROM dbo.country
-
---DBCC CHECKIDENT ('country', RESEED, 0)
-
---DROP TABLE IF EXISTS ref.state_province;
-
-DELETE FROM ref.state_province;
-DELETE FROM ref.country;
-DELETE FROM ref.league;
+--convert this to a proc in the long term.  Make the output a permanent reference table?
 
 INSERT INTO ref.country 
 (
@@ -35,11 +21,10 @@ SELECT  "English short name lower case"
         ,"Numeric code"
 FROM    stg."misc_CountryCode";
 
---DROP TABLE IF EXISTS country_map;
+DROP TABLE IF EXISTS country_map;
 
---research me: temporary tables in postgres
-/* CLEAN UP COUNTRY REFERENCES AND NORMALIZE.  CONSIDER RETAINING ME AS A PERMANENT REFERNETIAL MAP */
-/*
+--Country cleanup/normalization.
+
 CREATE TEMPORARY TABLE IF NOT EXISTS country_map
 (
 	country_raw VARCHAR(50)
@@ -81,14 +66,7 @@ UPDATE      country_map
 SET         country_ID = list.ID
 FROM        ref.country AS list WHERE list."Name" = country_map.country_clean;
 
---ONLY null country ID should be "at sea"
---SELECT * FROM country_map where country_id is null;
-
 --Importing ISO State Data.
-
---DBCC CHECKIDENT ('StateProvince', RESEED, 0)
-
-
 
 INSERT INTO ref.state_province (
     code
@@ -106,11 +84,8 @@ FROM        stg.misc_states AS s
 INNER JOIN  ref.country AS c on s."COUNTRY ISO CHAR 2 CODE" = c.iso_two
 WHERE      "ISO 3166-2 SUBDIVISION/STATE NAME" IS NOT NULL;
 
-
 --START WITH PEOPLE DATA 
 DELETE FROM core.people; -- will need to be more clever about this going forward due to referential integrity considerations.
-
---DBCC CHECKIDENT ('people', RESEED, 0)
 
 INSERT INTO     core.people (
                 chadwick_id
@@ -165,14 +140,6 @@ LEFT JOIN       ref.state_province state_birth ON countrymap_birth.country_id = 
 LEFT JOIN       ref.state_province state_death ON countrymap_death.country_id = state_death.country_id AND peeps."deathState" = state_death.abbrev_name
 ;
 
---select * from stg."chad_core_People";
-
-SELECT * FROM core.people WHERE name_last = 'Gwynn';
-select * from country_map;
-
--- select * from core.people where birth_state_id is not null or death_state_id is not null
--- select * from core.people where birthstateid is null and birthcountryid = 233 -- no null US records.  most important.
-
 INSERT INTO ref.league (
 	"abbrev_name"
 	,"lahman_id"
@@ -188,6 +155,82 @@ UPDATE ref.league SET "name" = 'Federal League', is_active = FALSE WHERE "lahman
 UPDATE ref.league SET "name" = 'Union Assocation', is_active = FALSE WHERE "lahman_id" = 'UA';
 UPDATE ref.league SET "name" = 'American Association', is_active = FALSE WHERE "lahman_id" = 'AA';
 
-SELECT * FROM ref.league;
+DROP TABLE IF EXISTS ballpark_stg;
 
-*/
+select *
+into temporary table ballpark_stg
+from stg."chad_core_Parks"; 
+
+alter table ballpark_stg add column alias_temp VARCHAR(100);
+alter table ballpark_stg add column alias1 VARCHAR(100);
+alter table ballpark_stg add column alias2 VARCHAR(100);
+alter table ballpark_stg add column alias3 VARCHAR(100);
+alter table ballpark_stg add column alias4 VARCHAR(100);
+
+update ballpark_stg set alias_temp = "park.alias"
+where "park.alias" is not null ;
+
+update ballpark_stg set alias1 = "park.alias", alias_temp=null where strpos("alias_temp", ';') = 0;
+
+update ballpark_stg
+set  	alias1 = trim(substring("park.alias", 0, strpos("park.alias", ';')))
+		,alias_temp =  trim(substring("alias_temp"
+						,strpos("alias_temp", ';') + 1
+						,length("alias_temp") - strpos("alias_temp", ';')))
+where strpos("alias_temp", ';') > 0;
+
+update ballpark_stg set alias2 = "alias_temp", alias_temp=null where strpos("alias_temp", ';') = 0;
+
+update ballpark_stg
+set  	alias2 = trim(substring("alias_temp", 0, strpos("alias_temp", ';')))
+		,alias_temp =  trim(substring("alias_temp"
+						,strpos("alias_temp", ';') + 1
+						,length("alias_temp") - strpos("alias_temp", ';')))
+where strpos("alias_temp", ';') > 0;
+
+update ballpark_stg set alias3 = "alias_temp", alias_temp=null where strpos("alias_temp", ';') = 0;
+
+
+update ballpark_stg
+set  	alias3 = trim(substring("alias_temp", 0, strpos("alias_temp", ';')))
+		,alias_temp =  trim(substring("alias_temp"
+						,strpos("alias_temp", ';') + 1
+						,length("alias_temp") - strpos("alias_temp", ';')))
+where "alias_temp" is not null and strpos("alias_temp", ';') > 0;
+
+update ballpark_stg set alias4 = "alias_temp", alias_temp=null where strpos("alias_temp", ';') = 0;
+
+alter table ballpark_stg drop column "park.alias";
+alter table ballpark_stg drop column "alias_temp";
+
+--some cleanups to be done here.
+update ballpark_stg set country = 'GB' where country = 'UK';
+update ballpark_stg set state = 'NSW' where state = 'New South Wales';
+update ballpark_stg set state = 'NL' where state = 'Nuevo Leon';
+
+insert into ref.ballpark
+(
+	"name"
+	,"city"
+	,"state_province_id"
+	,"country_id"
+	,"alias1" 
+	,"alias2"
+	,"alias3"
+	,"alias4"
+	,"lahman_id"
+)
+select 	b."park.name"
+		,b.city
+		,sp.id
+		,c.id
+		,b.alias1
+		,b.alias2
+		,b.alias3
+		,b.alias4
+		,b."park.key"
+from ballpark_stg as b
+left join ref.country c on b.country = c.iso_two
+left join ref.state_province sp on b.state = sp.abbrev_name and sp.country_id = c.id;
+
+

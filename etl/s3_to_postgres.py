@@ -3,13 +3,13 @@
 
 # ## ETL PROCESS FOR CHADWICK BASEBALL DATA
 # This is an ETL process to import data from the Chadwick Databank Postgres database, either locally hosted or on AWS.
-# https://github.com/chadwickbureau/baseballdatabank
+# https://github.com/chadwickbureau/baseballdatabank ---> this has been deprecated.
+# next step: switch back to lahman vanilla.  reimport into AWS S3.
 # 
 # ## INTENT:
 # * Python orchestrator using SQL supplement scripts
 # * import from S3
 # * Deploy schema fresh
-# * call SSMS job to do post-import updates
 # 
 # ### TODO:
 # * Engine vs connection in SQLAlchemy ---> Use Connection for sql procs etc, make sure to wrap in a transaction.
@@ -29,9 +29,6 @@ import pandas as pd
 import os.path
 import numpy as np
 
-#import sqlalchemy
-
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy import text
 
@@ -47,19 +44,17 @@ logging.basicConfig(level=logging.DEBUG,
 data_dir = "../../baseballdatabank/"
 schema_dir = "../schema/"
 tables_dir = "../schema/tables/"
-# server = "(localdb)\MSSQLLocalDB"
-# database = "baseball"
+
 iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
 state_province_file_name = "../data/cdh_state_codes.txt"
 
-engine = create_engine('postgresql+psycopg2://test:test@localhost:5433/baseball_test')
+user_name = 'test'
+password = 'test' ## super secure!
+db_server = 'localhost:5433'
+db_name = 'baseball_test'
 
-# Session = sessionmaker(engine)
-
-# here: create table schema.  Add config to determine full schema rebuild vs table refresh vs general update.
-# start with full rebuild tho.
-
-# import metadata and other misc data
+conn_string = 'postgresql+psycopg2://' + user_name + ':' + password + '@' + db_server + '/' + db_name
+engine = create_engine(conn_string)
 
 # ISO codes (pulled from https://www.kaggle.com/datasets/juanumusic/countries-iso-codes)
 with engine.connect() as conn:

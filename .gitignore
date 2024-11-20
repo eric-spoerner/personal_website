@@ -5,6 +5,7 @@
 
 # ES ADDS
 .ipynb_checkpoints
+etl/config.yml
 
 # User-specific files
 *.rsuser

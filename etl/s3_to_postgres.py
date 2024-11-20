@@ -25,6 +25,8 @@
 import logging
 import sys
 
+from ruamel.yaml import YAML
+
 import pandas as pd
 import os.path
 import numpy as np
@@ -40,18 +42,22 @@ logging.basicConfig(level=logging.DEBUG,
                     ]
 )
 
-# config namespace -- migrate me to a config soon please
-data_dir = "../../baseballdatabank/"
-schema_dir = "../schema/"
-tables_dir = "../schema/tables/"
+#unpack config file and populate local vars
+config_yaml = YAML()
+with open("config.yml") as config_file:
+    config = config_yaml.load(config_file)
 
-iso_country_file_name = "../data/wikipedia-iso-country-codes.csv"
-state_province_file_name = "../data/cdh_state_codes.txt"
+data_dir = config["dirs"]["data_dir"]
+schema_dir = config["dirs"]["schema_dir"]
+tables_dir = config["dirs"]["tables_dir"]
 
-user_name = 'test'
-password = 'test' ## super secure!
-db_server = 'localhost:5433'
-db_name = 'baseball_test'
+iso_country_file_name = config["files"]["iso_country_file_name"]
+state_province_file_name = config["files"]["state_province_file_name"]
+
+user_name = config["credentials"]["user_name"]
+password = config["credentials"]["password"]
+db_server = config["credentials"]["db_server"]
+db_name = config["credentials"]["db_name"]
 
 conn_string = 'postgresql+psycopg2://' + user_name + ':' + password + '@' + db_server + '/' + db_name
 engine = create_engine(conn_string)
@@ -79,17 +85,10 @@ with engine.connect() as conn:
 
     logging.info("Complete.")
 
-# begin the bulk ETL process of chadwick data
-subdirs = ["core","contrib"]
-
+# Extract chadwick data into staging tables
 with engine.connect() as conn:
 
-    # with Session.begin() as session:
-    #     with open(schema_dir + "Create stg Schema.sql") as file:
-    #         query = text(file.read())
-    #         conn.execute(query)
-
-    for subdir in subdirs:
+    for subdir in ["core","contrib"]:
         logging.info("Starting processing of subdirectory -- " + subdir)
     
         for i in os.listdir(data_dir + subdir):
@@ -107,7 +106,6 @@ with engine.connect() as conn:
                 # infinite ERAs are unfortunate.
                 df.replace({np.inf: np.nan, -np.inf: np.nan}, inplace=True)  
                 
-                # with Session.begin() as session:
                 df.to_sql(name=table_name
                             ,schema='stg'
                             ,con=engine
@@ -118,7 +116,6 @@ with engine.connect() as conn:
 
     for i in os.listdir(tables_dir):
 
-        ## cascading deletes and pk issues. how to handle?
         if i.endswith(".sql"):
 
             with open(tables_dir + i) as file:

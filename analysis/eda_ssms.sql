@@ -1,3 +1,5 @@
+--KEPT FOR LEGACY PURPOSES.  INITIAL EDA PERFORMED IN SSMS.
+
 --TO DO: explore azure data studio ability to add code snippets
 use baseball
 

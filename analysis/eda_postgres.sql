@@ -1,5 +1,5 @@
-/*
-CONSIDER GRABBING SEAMHEADS BASEBALL DB INSTEAD.
+
+--CONSIDER GRABBING SEAMHEADS BASEBALL DB INSTEAD.
 
 select * from stg."chad_core_Parks";
 
@@ -36,7 +36,7 @@ UPDATE ref.league SET "name" = 'American Association', is_active = FALSE WHERE "
 
 SELECT * FROM ref.league;
 */
-
+/*
 --UA: Union Association
 --AA: American Association
 --FL: Federal League
